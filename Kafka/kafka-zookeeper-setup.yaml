@@ -1,0 +1,131 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: amazon-review-sentiment-analysis
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-zookeeper
+  namespace: amazon-review-sentiment-analysis
+  labels:
+    app: kafka-zookeeper
+spec:
+  ports:
+    - name: client
+      port: 2181
+      protocol: TCP
+      targetPort: client
+    - name: broker
+      port: 9092
+      protocol: TCP
+      targetPort: 9092
+  selector:
+    app: kafka-zookeeper
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: kafka-zookeeper-headless
+  namespace: amazon-review-sentiment-analysis
+  labels:
+    app: kafka-zookeeper
+spec:
+  clusterIP: None
+  ports:
+    - name: client
+      port: 2181
+      protocol: TCP
+      targetPort: 2181
+    - name: election
+      port: 3888
+      protocol: TCP
+      targetPort: 3888
+    - name: server
+      port: 2888
+      protocol: TCP
+      targetPort: 2888
+    - name: broker
+      port: 9092
+      protocol: TCP
+      targetPort: 9092
+  selector:
+    app: kafka-zookeeper
+  sessionAffinity: None
+  type: ClusterIP
+
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: kafka-zookeeper
+  namespace: amazon-review-sentiment-analysis
+spec:
+  selector:
+    matchLabels:
+      app: kafka-zookeeper
+  serviceName: "kafka-zookeeper"
+  replicas: 3
+  podManagementPolicy: Parallel
+  template:
+    metadata:
+      labels:
+        app: kafka-zookeeper
+    spec:
+      containers:
+        - name: kafka-zookeeper
+          imagePullPolicy: Always
+          image: "hishailesh77/kafka-zookeeper:latest"
+          resources:
+            requests:
+              memory: "8Gi"
+              cpu: "4"
+          command: ["sh", "-c", "/app/kafka_zookeeper_setup.sh"]
+          ports:
+            - containerPort: 2181
+              name: client
+              protocol: TCP
+            - containerPort: 3888
+              name: election
+              protocol: TCP
+            - containerPort: 2888
+              name: server
+              protocol: TCP
+            - containerPort: 9092
+              name: broker
+              protocol: TCP
+          env:
+            - name: KAFKA_DATADIR
+              value: "/data/kafka"
+          volumeMounts:
+            - name: data
+              mountPath: /data/kafka
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: [ "ReadWriteOnce" ]
+        resources:
+          requests:
+            storage: 20Gi
+---
+apiVersion: policy/v1beta1
+kind: PodDisruptionBudget
+metadata:
+  labels:
+    app: kafka-zookeeper
+  name: kafka-zookeeper
+  namespace: amazon-review-sentiment-analysis
+spec:
+  maxUnavailable: 1
+  selector:
+    matchLabels:
+      app: kafka-zookeeper
+
+
+
