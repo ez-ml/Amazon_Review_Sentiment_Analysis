@@ -1,0 +1,1 @@
+docker build -t hishailesh77/spark:latest -f Dockerfile/Spark_Base.Dockerfile . && docker push hishailesh77/spark:latest

@@ -21,6 +21,7 @@ module "eks" {
       name                          = "cpu-worker-group"
       instance_type                 = "m5.4xlarge"
       additional_userdata           = "echo foo bar"
+      asg_max_size                  = 10
       asg_desired_capacity          = 5
       additional_security_group_ids = [aws_security_group.worker_group_mgmt_one.id]
     },
@@ -29,6 +30,7 @@ module "eks" {
       instance_type                 = "g4dn.2xlarge"
       additional_userdata           = "echo foo bar"
       additional_security_group_ids = [aws_security_group.worker_group_mgmt_two.id]
+      asg_max_size                  = 5
       asg_desired_capacity          = 2
     },
   ]
